@@ -1,0 +1,26 @@
+app = "qb1"
+kill_signal = "SIGINT"
+kill_timeout = 5
+
+[build]
+  image = "your-image-name:latest"
+
+[env]
+  # any ENV vars you’ve set
+
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
