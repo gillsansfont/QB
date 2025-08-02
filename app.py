@@ -6,36 +6,40 @@ from PIL import Image
 from scipy.signal import convolve2d
 from quantumblur.quantumblur import QuantumBlur
 
-# Optional: if you want real-quantum hardware via Qiskit Runtime:
+# (Optional) Qiskit Runtime setup…
 if os.environ.get("JyFqdslIKjEPocpvFvm_9DxqdsSyV5giahkHH06u_dkr"):
     from qiskit_ibm_runtime import QiskitRuntimeService
-    service = QiskitRuntimeService(channel="ibm_quantum", token=os.environ["JyFqdslIKjEPocpvFvm_9DxqdsSyV5giahkHH06u_dkr"])
+    service = QiskitRuntimeService(
+        channel="ibm_quantum",
+        token=os.environ["JyFqdslIKjEPocpvFvm_9DxqdsSyV5giahkHH06u_dkr"]
+    )
     qb = QuantumBlur(size=99, rotations=3, shots=2048, backend=service)
 else:
     qb = QuantumBlur(size=99, rotations=3, shots=2048)
 
+# ——— Here’s the CORS Setup ———
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],    # restrict in production!
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"],        # or lock down to your Hydra domain
+    allow_methods=["*"],        # GET, POST, etc.
+    allow_headers=["*"],        # Content-Type, Authorization, …
+    allow_credentials=True,     # if you ever need cookies/auth
 )
+# ————————————————————————
 
 @app.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     while True:
-        frame = await ws.receive_bytes()            # incoming JPEG blob
-        img = Image.open(io.BytesIO(frame)).convert("L")
-        arr = np.array(img)
+        frame = await ws.receive_bytes()
+        img   = Image.open(io.BytesIO(frame)).convert("L")
+        arr   = np.array(img)
 
-        # Generate new quantum‐blur kernel (or reuse if params static)
-        kernel = qb.get_kernel()                    # from quantumblur.py :contentReference[oaicite:0]{index=0}
-
-        # Convolve on the server
+        kernel  = qb.get_kernel()
         blurred = convolve2d(arr, kernel, mode="same", boundary="wrap")
-        out = Image.fromarray(np.clip(blurred, 0, 255).astype(np.uint8))
+        out     = Image.fromarray(np.clip(blurred,0,255).astype(np.uint8))
 
         buf = io.BytesIO()
         out.save(buf, format="JPEG", quality=80)
