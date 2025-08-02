@@ -5,4 +5,4 @@ numpy
 scipy
 qiskit
 qiskit-ibm-runtime   # optional, only if you use real hardware
-quantumblur          # pip install git+https://github.com/qiskit-community/QuantumBlur.git
+git+https://github.com/qiskit-community/QuantumBlur.git@main#egg=quantumblur
